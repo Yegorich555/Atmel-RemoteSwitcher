@@ -1,0 +1,1 @@
+#define STR_PARCEL "Gol2673d"
