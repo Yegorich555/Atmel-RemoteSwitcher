@@ -27,8 +27,9 @@
 #include "../parcel.h"
 const char parcel[] = STR_PARCEL;
 
-unsigned char myByte;
-bool isNeedTrigger;
+#define PERCENT_Quality 50
+#define QUALITY_Set (sizeof parcel * PERCENT_Quality / 100)
+volatile bool isNeedTrigger;
 
 int main(void)
 {
@@ -48,9 +49,49 @@ int main(void)
 	}
 }
 
+int prevIndex = -1;
+int cntGood = 0;
+
+//Tested parcel= 'Gol26375\n'
+//qualitySet=4
+//Test 'Gol26375\n' OK
+//Test 'ol26375\n' OK
+//Test 'Gol26375' OK
+//Test 'Gol2' OK
+//Test 'l263' OK
+//Test 'G_l26375\n' OK
+//Test 'bad_Gol26375\n' OK
+
+//Test 'GGol26375\n' failed
+//Test 'lGol26375\n' failed
+//Test 'GolGol26375\n' failed
+//Test 'ol2Gol2' failed
+//Test 'ol_6Gol26' failed
+
+//Test 'GsomeText' need wrong: OK
+
 USOFT_ISR_newByte(b)
 {
-	int size = sizeof parcel;
-	myByte = b;
-	//todo analyze of the parcel
+	if (prevIndex == -1)
+	{
+		while (prevIndex < sizeof parcel - QUALITY_Set)
+		{
+			if (b == parcel[++prevIndex])
+			{
+				cntGood = 1;
+				return;
+			}
+		}
+		prevIndex = -1;
+	}
+	else if (b == parcel[++prevIndex])
+	{
+		isNeedTrigger = ++cntGood >= QUALITY_Set;
+	}
+
+	if (isNeedTrigger || prevIndex >= sizeof parcel - 1)
+	{
+		cntGood = 0;
+		prevIndex = -1;
+	}
 }
