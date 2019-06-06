@@ -43,8 +43,8 @@ int main(void)
 		if (isNeedTrigger)
 		{
 			io_togglePort(IO_OutSwitch);
-			isNeedTrigger = false;
 			delay_ms(DELAY_between);
+			isNeedTrigger = false;
 		}
 	}
 }
@@ -72,6 +72,10 @@ int cntGood = 0;
 
 USOFT_ISR_newByte(b)
 {
+	if (isNeedTrigger)
+	{
+		return;
+	}
 	if (prevIndex == -1)
 	{
 		while (prevIndex < sizeof parcel - QUALITY_Set)
