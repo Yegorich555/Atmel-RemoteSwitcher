@@ -4,7 +4,7 @@
 * Created: 05.06.2019 17:18:56
 * Author : YegorVM
 */
-#define F_CPU 4800000UL
+#define F_CPU 600000UL //fuses for 4.8MHz CKDIV8==1
 #include <avr/io.h>
 #include <extensions.h> //add ref to Atmel-Library and reload Studio
 
@@ -25,7 +25,7 @@ int main(void)
 		{
 			usoft_putStringf(STR_PARCEL);
 		}
-		delay_ms(10);
+		_delay_us(100);
 	}
 }
 
