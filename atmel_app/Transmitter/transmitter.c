@@ -21,10 +21,7 @@ int main(void)
 	usoft_init();
 	while (1)
 	{
-		for (int i = 0; i < 5; ++i)
-		{
-			usoft_putStringf(STR_PARCEL);
-		}
+		usoft_putStringf(STR_PARCEL);
 		_delay_us(100);
 	}
 }
