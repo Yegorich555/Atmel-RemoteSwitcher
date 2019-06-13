@@ -25,7 +25,7 @@
 #define USOFT_NewByteEvent_EN 1
 
 #if DEBUG
-#define USOFT_TXEN 1
+#define USOFT_TXEN 0
 #define USOFT_IO_TX IO_DEBUG_TX
 #else
 #define USOFT_TXEN 0
@@ -38,26 +38,45 @@
 #define QUALITY_Set (STR_PARCEL_SIZE * PERCENT_Quality / 100)
 volatile bool isNeedTrigger;
 
-//test
-//int main(void)
-//{
-	//for (int i=0;i<STR_PARCEL_SIZE;++i)
-	 //usoft_newByte(STR_PARCEL[i]);
-//}
-
+//Test 'Gol26735\n' OK
+//Test 'ol26735\n' OK
+//Test 'Gol26735' OK
+//Test 'Gol2' OK
+//Test 'l267' OK
+//Test 'G_l26735\n' OK
+//Test 'bad_Gol26735\n' OK
+//
+//Test 'GGol26735\n' OK
+//Test 'GolGol26735\n' OK
+//Test 'ol2Gol26' failed
+//Test 'ol_6Gol26' failed
+//Test '6735\nGol26735\n' OK
+//Test '735\nGol26735\n' OK
+//
+//Test 'GsomeText' need wrong: OK
+//Test 'long parcel_Gol26735' OK
 int main(void)
 {
-	MCUCR &= ~(1<<ISC01) | ~(0<<ISC00);	// Trigger INT0 on rising edge
-	PCMSK |= (1<<PCINT4);   // pin change mask: listen to portb
-	GIMSK |= (1<<PCIE); // enable PCINT interrupt
-	usoft_init();
+	#define TEST_PARCEL "ol2Gol26"  //"ol2Gol26"
+	for (uint8_t i=0;i< sizeof TEST_PARCEL;++i)
+	usoft_newByte(TEST_PARCEL[i]);
 	
+	if (isNeedTrigger)
+	return 1;
+	else
+	return 0;
+}
+
+int main2(void)
+{
+	return 1;
+	usoft_init();
 	io_set(DDR, IO_OutSwitch);
+	
 	//delay_ms(200);
 	//usoft_putStringf(buf);
 	while (1)
 	{
-		//usoft_listen();
 		if (isNeedTrigger)
 		{
 			usoft_putStringf("ok\n");
@@ -69,60 +88,81 @@ int main(void)
 			
 			isNeedTrigger = false;
 		}
+		else
+		{
+			usoft_listen();
+		}
 	}
 }
 
-ISR(PCINT0_vect)
+volatile uint8_t bufStartIndex;
+volatile uint8_t bufLastIndex;
+volatile uint8_t parcelIndex = 0;
+unsigned char buf[STR_PARCEL_SIZE];
+void checkBuffer()
 {
-	usoft_listen();
-}
-
-//Tested parcel= 'Gol26375\n'
-//qualitySet=4
-//Test 'Gol26375\n' OK
-//Test 'ol26375\n' OK
-//Test 'Gol26375' OK
-//Test 'Gol2' OK
-//Test 'l263' OK
-//Test 'G_l26375\n' OK
-//Test 'bad_Gol26375\n' OK
-
-//Test 'GGol26375\n' failed
-//Test 'lGol26375\n' failed
-//Test 'GolGol26375\n' failed
-//Test 'ol2Gol2' failed
-//Test 'ol_6Gol26' failed
-
-//Test 'GsomeText' need wrong: OK
-
-int8_t prevIndex = -1;
-uint8_t cntGood = 0;
-USOFT_ISR_newByte(b)
-{
-	if (isNeedTrigger)
+	if (bufLastIndex - bufStartIndex < QUALITY_Set - 1)
 	{
 		return;
 	}
-	if (prevIndex == -1)
+	
+	uint8_t i = bufStartIndex;
+	parcelIndex = 0;
+	uint8_t cntGood = 0;
+	
+	void searchStart()
 	{
-		while (prevIndex < (int8_t)(STR_PARCEL_SIZE - QUALITY_Set))
+		for (; i < bufLastIndex - (STR_PARCEL_SIZE - QUALITY_Set - 2); ++i, ++bufStartIndex)
 		{
-			if (b == STR_PARCEL[++prevIndex])
+			for (; parcelIndex < (STR_PARCEL_SIZE - QUALITY_Set + 1); ++parcelIndex)
 			{
-				cntGood = 1;
-				return;
+				if (buf[i%STR_PARCEL_SIZE] == STR_PARCEL[parcelIndex])
+				{
+					cntGood = 1;
+					return;
+				}
 			}
 		}
-		prevIndex = -1;
 	}
-	else if (b == STR_PARCEL[++prevIndex])
+	searchStart();
+	if (cntGood == 0)
 	{
-		isNeedTrigger = ++cntGood >= QUALITY_Set;
+		return;
 	}
+	//todo check i, parceIndex
+	while(++i <= bufLastIndex)
+	{
+		if (buf[i%STR_PARCEL_SIZE] == STR_PARCEL[++parcelIndex])
+		{
+			++cntGood;
+			isNeedTrigger = cntGood >= QUALITY_Set;
+		}
+		
+		if (isNeedTrigger)
+		{
+			bufStartIndex = 0;
+			bufLastIndex = 0;
+			break;
+		}
+		else if (QUALITY_Set - cntGood > STR_PARCEL_SIZE - parcelIndex - 1) // parcelIndex >= (STR_PARCEL_SIZE - 1)) 
+		//#define TEST_PARCEL "ol_6Gol26"
+		//#define TEST_PARCEL "012345678"
+		{
+			++bufStartIndex;
+			break;
+		}
+	}
+}
 
-	if (isNeedTrigger || prevIndex >= (int8_t)STR_PARCEL_SIZE - 1)
+USOFT_ISR_newByte(b)
+{
+	buf[bufLastIndex%STR_PARCEL_SIZE] = b;
+	
+	checkBuffer();
+	
+	++bufLastIndex;
+	if (bufLastIndex > 254)
 	{
-		cntGood = 0;
-		prevIndex = -1;
+		bufLastIndex = 0;
 	}
 }
