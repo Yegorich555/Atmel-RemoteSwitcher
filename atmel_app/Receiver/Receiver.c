@@ -50,6 +50,15 @@ volatile bool isNeedTrigger;
 //return 0;
 //}
 
+#include <avr/wdt.h>
+void wdt_restart()
+{
+	#ifndef DEBUG
+	wdt_reset();
+	wdt_enable(WDTO_15MS); //maybe don't use this if IO is On
+	#endif
+}
+
 int main(void)
 {
 	usoft_init();
@@ -57,6 +66,7 @@ int main(void)
 	
 	while (1)
 	{
+		wdt_restart();
 		usoft_listen();
 		
 		if (isNeedTrigger)
@@ -66,9 +76,10 @@ int main(void)
 			#else
 			io_togglePort(IO_OutSwitch);
 			#endif
-			
+
 			for (uint16_t i=0; i < DELAY_between*10*0.7; ++i) //*10 because 100us interval; *.8 because the real time is increased by nested operations and interrupts
 			{
+				wdt_restart();
 				usoft_listen();
 				if (isNeedTrigger)
 				{
@@ -77,6 +88,7 @@ int main(void)
 				}
 				_delay_us(100);
 			}
+			
 			#if DEBUG
 			usoft_putStringf("go\n");
 			#endif
