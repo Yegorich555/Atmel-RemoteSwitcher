@@ -21,7 +21,10 @@ int main(void)
 	usoft_init();
 	while (1)
 	{
-		usoft_putStringf(STR_PARCEL);
+		for (uint8_t i = 0; i < PARCEL_SIZE; ++i)
+		{
+			usoft_putCharf(PARCEL_CHAR);
+		}
 		_delay_us(100);
 	}
 }

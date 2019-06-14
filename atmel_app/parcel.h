@@ -1,2 +1,2 @@
-#define STR_PARCEL "Gol2673\n" //parcel must contain end-line character '\n'
-#define STR_PARCEL_SIZE sizeof STR_PARCEL //parcel must contain end-line character '\n'
+#define PARCEL_CHAR 'G' //0b01000111
+#define PARCEL_SIZE 12
