@@ -9,11 +9,7 @@
 #include <extensions.h> //add ref to Atmel-Library and reload Studio
 
 #define IO_OutSwitch B, 3
-#ifndef DEBUG
 #define DELAY_between 3000 //delay between switches ms
-#else
-#define DELAY_between 100 //delay between switches ms
-#endif
 
 #define USOFT_BAUD 1200
 #if DEBUG
@@ -44,7 +40,7 @@ volatile bool isNeedTrigger;
 //Test '__GGG' OK
 //int main(void)
 //{
-//#define TEST_PARCEL "__AAA"
+//#define TEST_PARCEL "__GGG"
 //for (uint8_t i=0;i< sizeof TEST_PARCEL;++i)
 //usoft_newByte(TEST_PARCEL[i]);
 //
@@ -61,6 +57,8 @@ int main(void)
 	
 	while (1)
 	{
+		usoft_listen();
+		
 		if (isNeedTrigger)
 		{
 			#if DEBUG
@@ -68,13 +66,20 @@ int main(void)
 			#else
 			io_togglePort(IO_OutSwitch);
 			#endif
-			delay_ms(DELAY_between);
 			
-			isNeedTrigger = false;
-		}
-		else
-		{
-			usoft_listen();
+			for (uint16_t i=0; i < DELAY_between*10*0.7; ++i) //*10 because 100us interval; *.8 because the real time is increased by nested operations and interrupts
+			{
+				usoft_listen();
+				if (isNeedTrigger)
+				{
+					isNeedTrigger = false;
+					i = 0;
+				}
+				_delay_us(100);
+			}
+			#if DEBUG
+			usoft_putStringf("go\n");
+			#endif
 		}
 	}
 }
@@ -86,6 +91,7 @@ USOFT_ISR_newByte(b)
 	if (b == PARCEL_CHAR)
 	{
 		++cntGood;
+		cntForBad = 0;
 		if (cntGood >= QUALITY_Set)
 		{
 			isNeedTrigger = true;
