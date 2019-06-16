@@ -9,7 +9,7 @@
 #include <extensions.h> //add ref to Atmel-Library and reload Studio
 
 #define USOFT_BAUD 1200
-#define USOFT_IO_TX B, 4
+#define USOFT_IO_TX B, 3
 #define USOFT_RXEN 0
 #define USOFT_TXEN 1
 #include <uart_soft.h> //add ref to Atmel-Library and reload Studio
@@ -25,7 +25,7 @@ int main(void)
 		{
 			usoft_putCharf(PARCEL_CHAR);
 		}
-		_delay_us(100);
+		delay_ms(10);
 	}
 }
 
