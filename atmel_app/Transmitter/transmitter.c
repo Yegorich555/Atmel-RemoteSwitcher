@@ -25,7 +25,7 @@ int main(void)
 		{
 			usoft_putCharf(PARCEL_CHAR);
 		}
-		delay_ms(10);
+		delay_ms(300);
 	}
 }
 
