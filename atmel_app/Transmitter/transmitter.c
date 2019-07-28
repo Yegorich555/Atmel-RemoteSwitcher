@@ -9,9 +9,10 @@
 #include <extensions.h> //add ref to Atmel-Library and reload Studio
 
 #define USOFT_BAUD 1200
-#define USOFT_IO_TX B, 3
+#define USOFT_IO_TX B, 4
 #define USOFT_RXEN 0
 #define USOFT_TXEN 1
+#define USOFT_tCorrection -16
 #include <uart_soft.h> //add ref to Atmel-Library and reload Studio
 
 #include "../parcel.h"
@@ -28,7 +29,7 @@
 #define MIN_VOLTAGE_Rd MIN_VOLTAGE*Rd2/(Rd1+Rd2) //The real voltage in voltage divider
 #define MIN_VOLTAGE_ADC MIN_VOLTAGE_Rd*1023 / 1.1 //1023 is max of ADC, 1.1V is the real value of maxADC
 
-#define IO_LED B, 1
+#define IO_LED B, 0
 
 void adc_init(void)
 {
@@ -52,6 +53,7 @@ int main(void)
 {
 	adc_init();
 	usoft_init();
+	io_set(DDR, IO_LED);
 	
 	while (1)
 	{
@@ -69,11 +71,14 @@ int main(void)
 			voltage += read_adc(IO_ADC_V);
 		}
 		voltage /= adcCount;
-		
+
 		if (voltage < MIN_VOLTAGE_ADC){
-			io_set(DDR, IO_LED);
 			io_togglePort(IO_LED);
 		}
+		else {
+			io_resetPort(IO_LED);
+		}
+		
 	}
 }
 
